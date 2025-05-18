@@ -569,18 +569,11 @@ const MapPage: React.FC = () => {
                       {/* Diğer kaynak markerları */}
                       {filteredResources.map((res: any, idx: number) => {
                         // Kalan süreyi hesapla (saniye cinsinden)
-                        let kalanSn = null;
-                        if (res.ilaclandiMi && res.ilaclamaZamani) {
-                          const sure = ilaclanmaSureleri[res.type] || { gun: 15, saat: 0, dakika: 0 };
-                          const gun = Number(sure.gun) || 0;
-                          const saat = Number(sure.saat) || 0;
-                          const dakika = Number(sure.dakika) || 0;
-                          const ILACLAMA_SURESI = (gun * 24 * 60 * 60) + (saat * 60 * 60) + (dakika * 60);
-                          const start = new Date(res.ilaclamaZamani).getTime();
-                          const now = Date.now();
-                          const diff = Math.floor((now - start) / 1000);
-                          kalanSn = ILACLAMA_SURESI - diff;
-                        }
+                        // let kalanSn = null; // SİL
+                        // if (res.ilaclandiMi && res.ilaclamaZamani) {
+                        //   ...
+                        //   kalanSn = ...
+                        // } // SİL
                         // Her zaman kendi iconu gösterilecek
                         let iconUrl = resourceTypeIcons[res.type] || resourceTypeIcons['sivrisinek'];
                         let tooltipText = res.type;
