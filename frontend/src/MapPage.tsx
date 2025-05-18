@@ -8,7 +8,6 @@ import FilterListIcon from '@mui/icons-material/FilterList';
 import MenuItem from '@mui/material/MenuItem';
 // @ts-ignore
 import MarkerClusterGroup from 'react-leaflet-cluster';
-import MapIcon from '@mui/icons-material/Map';
 
 const API_URL = 'http://localhost:4000/api/markers';
 const RESOURCES_API = 'http://localhost:4000/api/resources';
