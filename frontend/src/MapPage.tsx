@@ -162,6 +162,46 @@ const MapPage: React.FC = () => {
     return `Kalan Süre: ${kalanGun}g ${kalanSaat}s ${kalanDk}dk`;
   }
 
+  // Konumuma git butonu
+  function GoToMyLocation({ position }: { position: [number, number] | null }) {
+    const map = useMap();
+    return (
+      <Box
+        sx={{
+          position: 'absolute',
+          bottom: { xs: 16, md: 24 },
+          right: { xs: 16, md: 24 },
+          zIndex: 1200,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'flex-end',
+        }}
+      >
+        <IconButton
+          color="primary"
+          size="large"
+          sx={{
+            bgcolor: 'white',
+            boxShadow: 3,
+            width: { xs: 64, sm: 56 },
+            height: { xs: 64, sm: 56 },
+            borderRadius: '50%',
+            border: '2px solid #1976d2',
+            '&:hover': { bgcolor: '#e3f2fd' },
+            opacity: position ? 1 : 0.5,
+            pointerEvents: position ? 'auto' : 'none',
+          }}
+          onClick={() => {
+            if (position) map.setView(position, 15);
+          }}
+          disabled={!position}
+        >
+          <MyLocationIcon sx={{ fontSize: { xs: 38, sm: 32 }, color: '#1976d2' }} />
+        </IconButton>
+      </Box>
+    );
+  }
+
   // Hızlı ilaçla fonksiyonu
   const handleIlacla = async (res: any) => {
     if (!res.id) return;
