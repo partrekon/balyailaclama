@@ -1,5 +1,5 @@
 const express = require('express');
-const sqlite3 = require('sqlite3').verbose();
+const Database = require('better-sqlite3');
 const cors = require('cors');
 const path = require('path');
 
@@ -11,67 +11,67 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // Veritabanı dosyasını oluştur
-const db = new sqlite3.Database(path.join(__dirname, 'data.db'));
+const db = new Database(path.join(__dirname, 'data.db'));
 
-db.serialize(() => {
-  db.run(`CREATE TABLE IF NOT EXISTS resources (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    type TEXT NOT NULL,
-    lat REAL NOT NULL,
-    lng REAL NOT NULL,
-    ilce TEXT,
-    mahalle TEXT,
-    adres TEXT,
-    aciklama TEXT,
-    tarih TEXT,
-    resim TEXT,
-    ilaclamaZamani TEXT,
-    ilaclandiMi INTEGER
-  )`);
-  db.run(`CREATE TABLE IF NOT EXISTS chemicals (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL,
-    stock REAL NOT NULL,
-    used REAL NOT NULL
-  )`);
-  db.run(`CREATE TABLE IF NOT EXISTS markers (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    lat REAL NOT NULL,
-    lng REAL NOT NULL,
-    desc TEXT
-  )`);
-  db.run(`CREATE TABLE IF NOT EXISTS users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    username TEXT NOT NULL UNIQUE,
-    password TEXT NOT NULL,
-    fullname TEXT,
-    role TEXT DEFAULT 'user',
-    active INTEGER DEFAULT 1
-  )`);
-  db.run(`CREATE TABLE IF NOT EXISTS logs (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id INTEGER,
-    username TEXT,
-    action TEXT,
-    detail TEXT,
-    created_at TEXT DEFAULT (datetime('now','localtime'))
-  )`);
-  db.run(`CREATE TABLE IF NOT EXISTS settings (
-    key TEXT PRIMARY KEY,
-    value TEXT
-  )`);
-});
+db.exec(`CREATE TABLE IF NOT EXISTS resources (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  type TEXT NOT NULL,
+  lat REAL NOT NULL,
+  lng REAL NOT NULL,
+  ilce TEXT,
+  mahalle TEXT,
+  adres TEXT,
+  aciklama TEXT,
+  tarih TEXT,
+  resim TEXT,
+  ilaclamaZamani TEXT,
+  ilaclandiMi INTEGER
+);
+CREATE TABLE IF NOT EXISTS chemicals (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  stock REAL NOT NULL,
+  used REAL NOT NULL
+);
+CREATE TABLE IF NOT EXISTS markers (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  lat REAL NOT NULL,
+  lng REAL NOT NULL,
+  desc TEXT
+);
+CREATE TABLE IF NOT EXISTS users (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  username TEXT NOT NULL UNIQUE,
+  password TEXT NOT NULL,
+  fullname TEXT,
+  role TEXT DEFAULT 'user',
+  active INTEGER DEFAULT 1
+);
+CREATE TABLE IF NOT EXISTS logs (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER,
+  username TEXT,
+  action TEXT,
+  detail TEXT,
+  created_at TEXT DEFAULT (datetime('now','localtime'))
+);
+CREATE TABLE IF NOT EXISTS settings (
+  key TEXT PRIMARY KEY,
+  value TEXT
+);`);
 
 function addLog({ user_id, username, action, detail }) {
-  db.run('INSERT INTO logs (user_id, username, action, detail) VALUES (?, ?, ?, ?)', [user_id, username, action, detail]);
+  db.prepare('INSERT INTO logs (user_id, username, action, detail) VALUES (?, ?, ?, ?)').run(user_id, username, action, detail);
 }
 
 // Tüm kaynakları getir
 app.get('/api/resources', (req, res) => {
-  db.all('SELECT * FROM resources', [], (err, rows) => {
-    if (err) return res.status(500).json({ error: err.message });
+  try {
+    const rows = db.prepare('SELECT * FROM resources').all();
     res.json(rows);
-  });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // Yeni kaynak ekle
@@ -80,22 +80,23 @@ app.post('/api/resources', (req, res) => {
   if (!type || lat == null || lng == null) {
     return res.status(400).json({ error: 'Eksik veri' });
   }
-  db.run(
-    'INSERT INTO resources (type, lat, lng, ilce, mahalle, adres, aciklama, tarih, resim) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-    [type, lat, lng, ilce || '', mahalle || '', adres || '', aciklama || '', tarih || '', resim || ''],
-    function(err) {
-      if (err) return res.status(500).json({ error: err.message });
-      res.json({ id: this.lastID, type, lat, lng, ilce, mahalle, adres, aciklama, tarih, resim });
-    }
-  );
+  try {
+    const stmt = db.prepare('INSERT INTO resources (type, lat, lng, ilce, mahalle, adres, aciklama, tarih, resim) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
+    const info = stmt.run(type, lat, lng, ilce || '', mahalle || '', adres || '', aciklama || '', tarih || '', resim || '');
+    res.json({ id: info.lastInsertRowid, type, lat, lng, ilce, mahalle, adres, aciklama, tarih, resim });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // İlaçlar: Tümünü getir
 app.get('/api/chemicals', (req, res) => {
-  db.all('SELECT * FROM chemicals', [], (err, rows) => {
-    if (err) return res.status(500).json({ error: err.message });
+  try {
+    const rows = db.prepare('SELECT * FROM chemicals').all();
     res.json(rows);
-  });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // İlaç ekle
@@ -104,10 +105,13 @@ app.post('/api/chemicals', (req, res) => {
   if (!name || stock == null || used == null) {
     return res.status(400).json({ error: 'Eksik veri' });
   }
-  db.run('INSERT INTO chemicals (name, stock, used) VALUES (?, ?, ?)', [name, stock, used], function(err) {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json({ id: this.lastID, name, stock, used });
-  });
+  try {
+    const stmt = db.prepare('INSERT INTO chemicals (name, stock, used) VALUES (?, ?, ?)');
+    const info = stmt.run(name, stock, used);
+    res.json({ id: info.lastInsertRowid, name, stock, used });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // İlaç güncelle (PATCH)
@@ -130,18 +134,22 @@ app.patch('/api/chemicals/:id', (req, res) => {
   }
   query += ' WHERE id = ?';
   params.push(id);
-  db.run(query, params, function(err) {
-    if (err) return res.status(500).json({ error: err.message });
+  try {
+    db.prepare(query).run(...params);
     res.json({ success: true });
-  });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // Harita işaretleri: Tümünü getir
 app.get('/api/markers', (req, res) => {
-  db.all('SELECT * FROM markers', [], (err, rows) => {
-    if (err) return res.status(500).json({ error: err.message });
+  try {
+    const rows = db.prepare('SELECT * FROM markers').all();
     res.json(rows);
-  });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // Harita işareti ekle
@@ -150,10 +158,13 @@ app.post('/api/markers', (req, res) => {
   if (lat == null || lng == null) {
     return res.status(400).json({ error: 'Eksik veri' });
   }
-  db.run('INSERT INTO markers (lat, lng, desc) VALUES (?, ?, ?)', [lat, lng, desc || ''], function(err) {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json({ id: this.lastID, lat, lng, desc });
-  });
+  try {
+    const stmt = db.prepare('INSERT INTO markers (lat, lng, desc) VALUES (?, ?, ?)');
+    const info = stmt.run(lat, lng, desc || '');
+    res.json({ id: info.lastInsertRowid, lat, lng, desc });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // Elle örnek ilaç verisi ekle
@@ -164,14 +175,16 @@ app.post('/api/chemicals/seed', (req, res) => {
     { name: 'Protoks', stock: 60, used: 0 },
   ];
   let added = 0;
-  defaultChemicals.forEach((chem, idx) => {
-    db.run('INSERT INTO chemicals (name, stock, used) VALUES (?, ?, ?)', [chem.name, chem.stock, chem.used], function(err) {
-      if (!err) added++;
-      if (idx === defaultChemicals.length - 1) {
-        res.json({ success: true, added });
-      }
+  try {
+    const stmt = db.prepare('INSERT INTO chemicals (name, stock, used) VALUES (?, ?, ?)');
+    defaultChemicals.forEach((chem) => {
+      stmt.run(chem.name, chem.stock, chem.used);
+      added++;
     });
-  });
+    res.json({ success: true, added });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // Kullanıcı ekle (seed)
@@ -181,14 +194,16 @@ app.post('/api/users/seed', (req, res) => {
     { username: 'admin', password: 'admin123', fullname: 'Admin Kullanıcı' }
   ];
   let added = 0;
-  defaultUsers.forEach((user, idx) => {
-    db.run('INSERT OR IGNORE INTO users (username, password, fullname) VALUES (?, ?, ?)', [user.username, user.password, user.fullname], function(err) {
-      if (!err) added++;
-      if (idx === defaultUsers.length - 1) {
-        res.json({ success: true, added });
-      }
+  try {
+    const stmt = db.prepare('INSERT OR IGNORE INTO users (username, password, fullname) VALUES (?, ?, ?)');
+    defaultUsers.forEach((user) => {
+      stmt.run(user.username, user.password, user.fullname);
+      added++;
     });
-  });
+    res.json({ success: true, added });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // Giriş endpointi
@@ -197,21 +212,25 @@ app.post('/api/login', (req, res) => {
   if (!username || !password) {
     return res.status(400).json({ error: 'Kullanıcı adı ve şifre gerekli' });
   }
-  db.get('SELECT * FROM users WHERE username = ? AND password = ?', [username, password], (err, row) => {
-    if (err) return res.status(500).json({ error: err.message });
+  try {
+    const row = db.prepare('SELECT * FROM users WHERE username = ? AND password = ?').get(username, password);
     if (!row) return res.status(401).json({ error: 'Geçersiz kullanıcı adı veya şifre' });
     addLog({ user_id: row.id, username: row.username, action: 'login', detail: 'Giriş yaptı' });
     res.json({ success: true, user: { id: row.id, username: row.username, fullname: row.fullname, role: row.role } });
-  });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // Kaynak sil
 app.delete('/api/resources/:id', (req, res) => {
   const { id } = req.params;
-  db.run('DELETE FROM resources WHERE id = ?', [id], function(err) {
-    if (err) return res.status(500).json({ error: err.message });
+  try {
+    db.prepare('DELETE FROM resources WHERE id = ?').run(id);
     res.json({ success: true });
-  });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // Kaynak güncelle
@@ -234,10 +253,12 @@ app.patch('/api/resources/:id', (req, res) => {
   if (fields.length === 0) return res.status(400).json({ error: 'Güncellenecek veri yok' });
   const sql = `UPDATE resources SET ${fields.join(', ')} WHERE id = ?`;
   values.push(id);
-  db.run(sql, values, function(err) {
-    if (err) return res.status(500).json({ error: err.message });
+  try {
+    db.prepare(sql).run(...values);
     res.json({ success: true });
-  });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // Kullanıcı kayıt endpointi
@@ -246,36 +267,39 @@ app.post('/api/register', (req, res) => {
   if (!fullname || !username || !password) {
     return res.status(400).json({ error: 'Tüm alanlar zorunlu' });
   }
-  db.run('INSERT INTO users (fullname, username, password, role) VALUES (?, ?, ?, ?)', [fullname, username, password, role || 'user'], function(err) {
-    if (err) {
-      if (err.message.includes('UNIQUE')) {
-        return res.status(400).json({ error: 'Bu kullanıcı adı zaten kullanılıyor' });
-      }
-      return res.status(500).json({ error: err.message });
+  try {
+    const info = db.prepare('INSERT INTO users (fullname, username, password, role) VALUES (?, ?, ?, ?)').run(fullname, username, password, role || 'user');
+    addLog({ user_id: info.lastInsertRowid, username, action: 'add', detail: 'Kullanıcı eklendi' });
+    res.json({ success: true, user: { id: info.lastInsertRowid, fullname, username, role: role || 'user' } });
+  } catch (err) {
+    if (err.message.includes('UNIQUE')) {
+      return res.status(400).json({ error: 'Bu kullanıcı adı zaten kullanılıyor' });
     }
-    addLog({ user_id: this.lastID, username, action: 'add', detail: 'Kullanıcı eklendi' });
-    res.json({ success: true, user: { id: this.lastID, fullname, username, role: role || 'user' } });
-  });
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // Tüm kullanıcıları getir
 app.get('/api/users', (req, res) => {
-  db.all('SELECT id, username, fullname, password, role, active FROM users', [], (err, rows) => {
-    if (err) return res.status(500).json({ error: err.message });
+  try {
+    const rows = db.prepare('SELECT id, username, fullname, password, role, active FROM users').all();
     res.json(rows);
-  });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // Kullanıcı sil
 app.delete('/api/users/:id', (req, res) => {
   const { id } = req.params;
-  db.get('SELECT * FROM users WHERE id = ?', [id], (err, user) => {
-    db.run('DELETE FROM users WHERE id = ?', [id], function(err2) {
-      if (err2) return res.status(500).json({ error: err2.message });
-      if (user) addLog({ user_id: user.id, username: user.username, action: 'delete', detail: 'Kullanıcı silindi' });
-      res.json({ success: true });
-    });
-  });
+  try {
+    const user = db.prepare('SELECT * FROM users WHERE id = ?').get(id);
+    db.prepare('DELETE FROM users WHERE id = ?').run(id);
+    if (user) addLog({ user_id: user.id, username: user.username, action: 'delete', detail: 'Kullanıcı silindi' });
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // Kullanıcı adını (fullname) güncelle
@@ -283,11 +307,13 @@ app.patch('/api/users/:id', (req, res) => {
   const { id } = req.params;
   const { fullname } = req.body;
   if (!fullname) return res.status(400).json({ error: 'fullname gerekli' });
-  db.run('UPDATE users SET fullname = ? WHERE id = ?', [fullname, id], function(err) {
-    if (err) return res.status(500).json({ error: err.message });
+  try {
+    db.prepare('UPDATE users SET fullname = ? WHERE id = ?').run(fullname, id);
     addLog({ user_id: id, username: '', action: 'update', detail: 'Ad güncellendi' });
     res.json({ success: true });
-  });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // Kullanıcı şifresi güncelle
@@ -295,11 +321,13 @@ app.patch('/api/users/:id/password', (req, res) => {
   const { id } = req.params;
   const { password } = req.body;
   if (!password) return res.status(400).json({ error: 'password gerekli' });
-  db.run('UPDATE users SET password = ? WHERE id = ?', [password, id], function(err) {
-    if (err) return res.status(500).json({ error: err.message });
+  try {
+    db.prepare('UPDATE users SET password = ? WHERE id = ?').run(password, id);
     addLog({ user_id: id, username: '', action: 'reset_password', detail: 'Şifre güncellendi' });
     res.json({ success: true });
-  });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // Kullanıcı aktif/pasif güncelle
@@ -307,29 +335,35 @@ app.patch('/api/users/:id/active', (req, res) => {
   const { id } = req.params;
   const { active } = req.body;
   if (active === undefined) return res.status(400).json({ error: 'active gerekli' });
-  db.run('UPDATE users SET active = ? WHERE id = ?', [active, id], function(err) {
-    if (err) return res.status(500).json({ error: err.message });
+  try {
+    db.prepare('UPDATE users SET active = ? WHERE id = ?').run(active, id);
     addLog({ user_id: id, username: '', action: 'active', detail: `Kullanıcı ${active ? 'aktif' : 'pasif'} yapıldı` });
     res.json({ success: true });
-  });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // Logları getir
 app.get('/api/logs', (req, res) => {
-  db.all('SELECT * FROM logs ORDER BY created_at DESC LIMIT 200', [], (err, rows) => {
-    if (err) return res.status(500).json({ error: err.message });
+  try {
+    const rows = db.prepare('SELECT * FROM logs ORDER BY created_at DESC LIMIT 200').all();
     res.json(rows);
-  });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // Site ayarlarını getir
 app.get('/api/settings', (req, res) => {
-  db.all('SELECT key, value FROM settings', [], (err, rows) => {
-    if (err) return res.status(500).json({ error: err.message });
+  try {
+    const rows = db.prepare('SELECT key, value FROM settings').all();
     const settings = {};
     rows.forEach(row => { settings[row.key] = row.value; });
     res.json(settings);
-  });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // Site ayarlarını güncelle
@@ -337,14 +371,15 @@ app.post('/api/settings', (req, res) => {
   const updates = req.body;
   const keys = Object.keys(updates);
   if (keys.length === 0) return res.status(400).json({ error: 'Ayar yok' });
-  let done = 0;
-  keys.forEach(key => {
-    db.run('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)', [key, updates[key]], function(err) {
-      if (err) return res.status(500).json({ error: err.message });
-      done++;
-      if (done === keys.length) res.json({ success: true });
+  try {
+    const stmt = db.prepare('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)');
+    keys.forEach(key => {
+      stmt.run(key, updates[key]);
     });
-  });
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 app.listen(PORT, () => {
