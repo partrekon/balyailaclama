@@ -11,17 +11,9 @@ const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
 const CARD_ICONS = [<ScienceIcon fontSize="large" />, <MapIcon fontSize="large" />, <AssessmentIcon fontSize="large" />, <LocationOnIcon fontSize="large" />];
 const CARD_COLORS = ['#1976d2', '#059669', '#f59e42', '#e11d48'];
 
-const GUIDE = [
-  'Sol menüden Kaynaklar, İlaçlar ve Harita bölümlerine ulaşabilirsiniz.',
-  'Kaynaklar bölümünden yeni kaynak ekleyebilir, toplu ilaçlama yapabilirsiniz.',
-  'İlaçlar bölümünde stok takibi ve ekleme işlemleri yapabilirsiniz.',
-  'Harita bölümünde tüm kaynakları ve işaretleri görebilirsiniz.',
-];
-
 const Home: React.FC = () => {
   const [resources, setResources] = useState<any[]>([]);
   const [chemicals, setChemicals] = useState<any[]>([]);
-  const [markers, setMarkers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
@@ -29,11 +21,9 @@ const Home: React.FC = () => {
     Promise.all([
       fetch('http://localhost:4000/api/resources').then(r => r.json()),
       fetch('http://localhost:4000/api/chemicals').then(r => r.json()),
-      fetch('http://localhost:4000/api/markers').then(r => r.json()),
-    ]).then(([res, chems, marks]) => {
+    ]).then(([res, chems]) => {
       setResources(res);
       setChemicals(chems);
-      setMarkers(marks);
       setLoading(false);
     });
   }, []);

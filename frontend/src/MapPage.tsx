@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Box, Typography, Paper, List, ListItem, ListItemText, TextField, Button, Drawer, IconButton, Badge, ListItemButton, Avatar, useTheme } from '@mui/material';
+import { Box, Typography, Paper, List, ListItem, ListItemText, TextField, Button, Drawer, IconButton, Avatar } from '@mui/material';
 import { MapContainer, TileLayer, Marker, Tooltip, useMap, Circle, Popup, LayersControl, LayerGroup, Polyline } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
@@ -8,10 +8,6 @@ import FilterListIcon from '@mui/icons-material/FilterList';
 import MenuItem from '@mui/material/MenuItem';
 // @ts-ignore
 import MarkerClusterGroup from 'react-leaflet-cluster';
-import InventoryIcon from '@mui/icons-material/Inventory';
-import ScienceIcon from '@mui/icons-material/Science';
-import MenuIcon from '@mui/icons-material/Menu';
-import HomeIcon from '@mui/icons-material/Home';
 import MapIcon from '@mui/icons-material/Map';
 
 const API_URL = 'http://localhost:4000/api/markers';
@@ -36,23 +32,19 @@ const resourceTypeIcons: { [key: string]: string } = {
   cop: 'https://cdn-icons-png.flaticon.com/512/7657/7657533.png',
   logar: 'https://cdn-icons-png.flaticon.com/512/4357/4357706.png',
 };
-const criticalIconUrl = 'https://cdn-icons-png.flaticon.com/512/564/564619.png'; // turuncu
-const expiredIconUrl = 'https://cdn-icons-png.flaticon.com/512/564/564623.png'; // kırmızı
 
 const MapPage: React.FC = () => {
   const [markers, setMarkers] = useState<any[]>([]);
   const [resources, setResources] = useState<any[]>([]);
-  const [error, setError] = useState('');
   const [desc, setDesc] = useState('');
   const [pendingLatLng, setPendingLatLng] = useState<{ lat: number; lng: number } | null>(null);
-  const [loading, setLoading] = useState(false);
   const [myPosition, setMyPosition] = useState<[number, number] | null>(null);
   const [filterOpen, setFilterOpen] = useState(false);
   const [filterType, setFilterType] = useState('');
   const [filterIlce, setFilterIlce] = useState('');
   const [filterMahalle, setFilterMahalle] = useState('');
   const [selectedResourceIds, setSelectedResourceIds] = useState<string[]>([]);
-  const [searchText, setSearchText] = useState('');
+  const [searchText] = useState('');
   const [searchMatchedId, setSearchMatchedId] = useState<string | null>(null);
   const [rotaKaynakIds, setRotaKaynakIds] = useState<string[]>([]);
   const [rotaType, setRotaType] = useState('');
@@ -112,7 +104,7 @@ const MapPage: React.FC = () => {
     } else {
       setSearchMatchedId(null);
     }
-  }, [searchText]);
+  }, [searchText, filteredResources]);
 
   // Canlı konumu al
   useEffect(() => {
@@ -136,82 +128,12 @@ const MapPage: React.FC = () => {
     fetch(API_URL)
       .then(res => res.json())
       .then(data => setMarkers(data))
-      .catch(() => setError('İşaretler alınamadı!'));
+      .catch(() => console.error('İşaretler alınamadı!'));
     fetch(RESOURCES_API)
       .then(res => res.json())
       .then(data => setResources(data))
-      .catch(() => setError('Kaynaklar alınamadı!'));
+      .catch(() => console.error('Kaynaklar alınamadı!'));
   }, []);
-
-  // Haritaya tıklanınca açıklama formunu aç
-  const handleAddMarker = (lat: number, lng: number) => {
-    setPendingLatLng({ lat, lng });
-  };
-
-  // Formdan işareti ekle
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!pendingLatLng) return;
-    setLoading(true);
-    try {
-      const res = await fetch(API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ lat: pendingLatLng.lat, lng: pendingLatLng.lng, desc })
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setMarkers(prev => [...prev, data]);
-        setDesc('');
-        setPendingLatLng(null);
-      } else {
-        setError(data.error || 'İşaret eklenemedi!');
-      }
-    } catch {
-      setError('Sunucuya ulaşılamıyor!');
-    }
-    setLoading(false);
-  };
-
-  // Konumuma git butonu
-  function GoToMyLocation({ position }: { position: [number, number] | null }) {
-    const map = useMap();
-    return (
-      <Box
-        sx={{
-          position: 'absolute',
-          bottom: { xs: 16, md: 24 },
-          right: { xs: 16, md: 24 },
-          zIndex: 1200,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'flex-end',
-        }}
-      >
-        <IconButton
-          color="primary"
-          size="large"
-          sx={{
-            bgcolor: 'white',
-            boxShadow: 3,
-            width: { xs: 64, sm: 56 },
-            height: { xs: 64, sm: 56 },
-            borderRadius: '50%',
-            border: '2px solid #1976d2',
-            '&:hover': { bgcolor: '#e3f2fd' },
-            opacity: position ? 1 : 0.5,
-            pointerEvents: position ? 'auto' : 'none',
-          }}
-          onClick={() => {
-            if (position) map.setView(position, 15);
-          }}
-          disabled={!position}
-        >
-          <MyLocationIcon sx={{ fontSize: { xs: 38, sm: 32 }, color: '#1976d2' }} />
-        </IconButton>
-      </Box>
-    );
-  }
 
   // localStorage'dan ilaçlanma sürelerini oku
   const defaultSureler = { sivrisinek: { gun: 15, saat: 0, dakika: 0 }, karasinek: { gun: 15, saat: 0, dakika: 0 }, cop: { gun: 20, saat: 0, dakika: 0 }, logar: { gun: 10, saat: 0, dakika: 0 } };

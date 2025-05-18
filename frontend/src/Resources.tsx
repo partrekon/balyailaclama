@@ -1,5 +1,5 @@
 import React, { useState, useEffect, ChangeEvent, useRef } from 'react';
-import { Box, Typography, Paper, TextField, Button, MenuItem, List, ListItem, ListItemText, InputAdornment, IconButton } from '@mui/material';
+import { Box, Typography, Paper, TextField, Button, MenuItem, List, ListItem, ListItemText, IconButton } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import PhotoCamera from '@mui/icons-material/PhotoCamera';
 import { MapContainer, TileLayer, Marker, useMapEvents, Circle } from 'react-leaflet';
@@ -253,7 +253,7 @@ const Resources: React.FC = () => {
   // ilaclamaSureleri değişince draft'ı da güncel tut (ör: sayfa yenileme sonrası)
   useEffect(() => {
     setIlaclamaSureleriDraft({ ...ilaclamaSureleri });
-  }, [sureAyarOpen]);
+  }, [sureAyarOpen, ilaclamaSureleri]);
 
   const handleTurPasifChange = (type: string, val: boolean) => {
     setPasifTurler(prev => {
@@ -420,16 +420,6 @@ const Resources: React.FC = () => {
     }
     return true;
   });
-
-  // Filtrede toplu ilaçlama
-  const handleTopluIlacla = (kaynaklar: Resource[]) => {
-    const now = new Date().toISOString();
-    kaynaklar.forEach(res => {
-      if (!res.ilaclandiMi) {
-        handleIlacla({ ...res, ilaclandiMi: true, ilaclamaZamani: now });
-      }
-    });
-  };
 
   useEffect(() => {
     if (timerRef.current) clearInterval(timerRef.current);

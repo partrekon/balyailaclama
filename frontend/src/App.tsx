@@ -2,10 +2,9 @@ import React, { useState, useEffect } from 'react';
 import './App.css';
 import { TextField, Button, Box, Typography, Paper, AppBar, Toolbar, IconButton, Drawer, List, ListItem, ListItemText, InputAdornment, Avatar, Fade } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
-import PersonIcon from '@mui/icons-material/Person';
 import LockIcon from '@mui/icons-material/Lock';
 import BadgeIcon from '@mui/icons-material/Badge';
-import { Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom';
+import { Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import Home from './Home';
 import Resources from './Resources';
 import Chemicals from './Chemicals';
@@ -18,7 +17,6 @@ import ListItemButton from '@mui/material/ListItemButton';
 import AdminPanel from './AdminPanel';
 
 const LOGIN_API = 'http://localhost:4000/api/login';
-const REGISTER_API = 'http://localhost:4000/api/register';
 
 type User = { id: number; username: string; fullname?: string };
 
@@ -38,7 +36,6 @@ function stringToColor(string: string) {
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [fullname, setFullname] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -71,7 +68,6 @@ function App() {
       if (res.ok && data.success) {
         setIsLoggedIn(true);
         setUser(data.user);
-        setFullname('');
         setError('');
         localStorage.setItem('balya_user', JSON.stringify(data.user));
       } else {
@@ -87,7 +83,6 @@ function App() {
     setIsLoggedIn(false);
     setUser(null);
     localStorage.removeItem('balya_user');
-    setFullname('');
     setUsername('');
     setPassword('');
   };
