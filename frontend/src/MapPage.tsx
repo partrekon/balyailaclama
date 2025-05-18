@@ -36,8 +36,6 @@ const resourceTypeIcons: { [key: string]: string } = {
 const MapPage: React.FC = () => {
   const [markers, setMarkers] = useState<any[]>([]);
   const [resources, setResources] = useState<any[]>([]);
-  const [desc, setDesc] = useState('');
-  const [pendingLatLng, setPendingLatLng] = useState<{ lat: number; lng: number } | null>(null);
   const [myPosition, setMyPosition] = useState<[number, number] | null>(null);
   const [filterOpen, setFilterOpen] = useState(false);
   const [filterType, setFilterType] = useState('');
