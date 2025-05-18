@@ -27,7 +27,7 @@ import Switch from '@mui/material/Switch';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import Checkbox from '@mui/material/Checkbox';
 
-const API_URL = 'http://localhost:4000/api/resources';
+const API_URL = process.env.REACT_APP_API_URL + '/api/resources';
 
 const resourceTypes = [
   { value: 'sivrisinek', label: 'Sivrisinek' },

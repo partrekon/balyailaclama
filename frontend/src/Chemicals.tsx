@@ -3,7 +3,7 @@ import { Box, Typography, Paper, TextField, Button, LinearProgress, Alert } from
 import AddIcon from '@mui/icons-material/Add';
 import ScienceIcon from '@mui/icons-material/Science';
 
-const API_URL = 'http://localhost:4000/api/chemicals';
+const API_URL = process.env.REACT_APP_API_URL + '/api/chemicals';
 
 // Başlangıçta eğer veritabanı boşsa eklenebilecek örnek ilaçlar
 const defaultChemicals = [

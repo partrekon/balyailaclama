@@ -16,7 +16,7 @@ import MapIcon from '@mui/icons-material/Map';
 import ListItemButton from '@mui/material/ListItemButton';
 import AdminPanel from './AdminPanel';
 
-const LOGIN_API = 'http://localhost:4000/api/login';
+const LOGIN_API = process.env.REACT_APP_API_URL + '/api/login';
 
 type User = { id: number; username: string; fullname?: string };
 

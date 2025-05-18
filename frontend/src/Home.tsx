@@ -18,9 +18,10 @@ const Home: React.FC = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    const API_URL = process.env.REACT_APP_API_URL;
     Promise.all([
-      fetch('http://localhost:4000/api/resources').then(r => r.json()),
-      fetch('http://localhost:4000/api/chemicals').then(r => r.json()),
+      fetch(API_URL + '/api/resources').then(r => r.json()),
+      fetch(API_URL + '/api/chemicals').then(r => r.json()),
     ]).then(([res, chems]) => {
       setResources(res);
       setChemicals(chems);

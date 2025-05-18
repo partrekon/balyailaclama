@@ -9,8 +9,8 @@ import MenuItem from '@mui/material/MenuItem';
 // @ts-ignore
 import MarkerClusterGroup from 'react-leaflet-cluster';
 
-const API_URL = 'http://localhost:4000/api/markers';
-const RESOURCES_API = 'http://localhost:4000/api/resources';
+const API_URL = process.env.REACT_APP_API_URL + '/api/markers';
+const RESOURCES_API = process.env.REACT_APP_API_URL + '/api/resources';
 
 // Varsayılan marker ikonunu düzeltmek için
 const iconUrl = require('leaflet/dist/images/marker-icon.png');

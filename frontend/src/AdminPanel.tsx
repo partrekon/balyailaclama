@@ -7,7 +7,7 @@ import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import Switch from '@mui/material/Switch';
 
-const API_URL = 'http://localhost:4000/api';
+const API_URL = process.env.REACT_APP_API_URL + '/api';
 
 const AdminPanel: React.FC = () => {
   const [users, setUsers] = useState<any[]>([]);
